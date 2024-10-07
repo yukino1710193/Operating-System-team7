@@ -19,10 +19,14 @@ fi
 # Hàm để tìm và xử lý các tệp rỗng
 process_empty_files() {
     local dir="$1"
-    echo $dir
     # Tìm các tệp có kích thước 0 trong thư mục hiện tại
-    empty_files=$(find "$dir" -type f -size 0)
+    empty_files=$(find "$dir" -type f -size 0 | grep -v '^$')
     while read -r FILE; do
+        # Bỏ qua nếu FILE là chuỗi rỗng
+        if [ -z "$FILE" ]; then
+            continue
+        fi
+    echo ''
     echo "Tệp rỗng: $FILE"
     ./menu "Có" "Không" </dev/tty
     case $? in
