@@ -3,7 +3,7 @@ export PATH=$PATH:$(pwd)
 
 # Kiểm tra xem tham số đã được cung cấp chưa
 if [ $# -eq 0 ]; then
-    echo -e "\033[33mVui lòng cung cấp đường dẫn tới thư mục."
+    echo "Vui lòng cung cấp đường dẫn tới thư mục."
     exit 1
 fi
 
@@ -12,7 +12,7 @@ DIRECTORY=$1
 
 # Kiểm tra xem thư mục có tồn tại không
 if [ ! -d "$DIRECTORY" ]; then
-    echo -e "\033[33mThư mục '$DIRECTORY' không tồn tại."
+    echo "Thư mục '$DIRECTORY' không tồn tại."
     exit 1
 fi
 
@@ -27,15 +27,15 @@ process_empty_files() {
             continue
         fi
     echo ''
-    echo -e "\033[32mTệp rỗng: $FILE"
+    echo "Tệp rỗng: $FILE"
     ./menu "Có" "Không" </dev/tty
     case $? in
         1)
             rm "$FILE"
-            echo -e "\033[35mĐã xóa: $FILE"
+            echo "Đã xóa: $FILE"
             ;;
         2)
-            echo -e "\033[32mGiữ lại: $FILE"
+            echo "Giữ lại: $FILE"
             ;;
     esac
     done <<< "$empty_files"
