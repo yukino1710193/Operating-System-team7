@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Thu Phí</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #343a40;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .sidebar a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 10px 20px;
+            border-bottom: 1px solid #495057;
+            cursor: pointer;
+        }
+
+        .sidebar a:hover {
+            background-color: #495057;
+        }
+
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h3 class="text-center py-3">QL Thu Phí</h3>
+        <a onclick="showSection('dashboard')">Dashboard</a>
+        <a onclick="showSection('fees')">Quản Lý Học Phí</a>
+        <a onclick="showSection('late')">Xử Lý Nộp Muộn</a>
+        <a onclick="showSection('reports')">Báo Cáo & Thống Kê</a>
+        <a onclick="showSection('system')">Hệ Thống</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <h1>Dashboard</h1>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="dashboard-card">
+                        <h3>Tổng Số Sinh Viên</h3>
+                        <p>200</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card">
+                        <h3>Tổng Số Lớp</h3>
+                        <p>50</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card">
+                        <h3>Đã Nộp Học Phí</h3>
+                        <p>150</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card">
+                        <h3>Nợ Học Phí</h3>
+                        <p>50</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fees Section -->
+        <section id="fees" class="section">
+            <h1>Quản Lý Học Phí</h1>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Mã Sinh Viên</th>
+                        <th>Họ Tên</th>
+                        <th>Số Tiền Nộp</th>
+                        <th>Trạng Thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>SV001</td>
+                        <td>Nguyễn Văn A</td>
+                        <td>5,000,000 VND</td>
+                        <td>Đã Nộp</td>
+                    </tr>
+                    <tr>
+                        <td>SV002</td>
+                        <td>Trần Thị B</td>
+                        <td>3,000,000 VND</td>
+                        <td>Chưa Nộp</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Late Section -->
+        <section id="late" class="section">
+            <h1>Xử Lý Nộp Muộn</h1>
+            <p>Các sinh viên sau đây đã nộp muộn:</p>
+            <ul>
+                <li>Nguyễn Văn C - Lớp K16 - 5 ngày trễ</li>
+                <li>Phạm Thị D - Lớp K17 - 3 ngày trễ</li>
+            </ul>
+        </section>
+
+        <!-- Reports Section -->
+        <section id="reports" class="section">
+            <h1>Báo Cáo & Thống Kê</h1>
+            <p>Biểu đồ thống kê về nộp học phí:</p>
+            <div>
+                <img src="https://via.placeholder.com/600x400" alt="Biểu đồ thống kê" class="img-fluid">
+            </div>
+        </section>
+
+        <!-- System Section -->
+        <section id="system" class="section">
+            <h1>Hệ Thống</h1>
+            <p>Quản lý hệ thống, cấu hình và kiểm tra lỗi.</p>
+            <ul>
+                <li>Cập nhật phần mềm</li>
+                <li>Kiểm tra trạng thái hệ thống</li>
+                <li>Quản lý quyền truy cập</li>
+            </ul>
+        </section>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            // Ẩn tất cả các section
+            document.querySelectorAll('.section').forEach(function (section) {
+                section.classList.remove('active');
+            });
+            // Hiển thị section được chọn
+            document.getElementById(sectionId).classList.add('active');
+        }
+    </script>
+</body>
+
+</html>
