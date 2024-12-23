@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Quản Lý Thu Phí</title>
+    <title>Hệ Thống Quản Lý Học Phí</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
         body {
@@ -44,18 +44,23 @@
         .section.active {
             display: block;
         }
+
+        .table-container {
+            overflow-x: auto;
+        }
     </style>
 </head>
 
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
-        <h3 class="text-center py-3">QL Thu Phí</h3>
+        <h3 class="text-center py-3">QL Học Phí</h3>
         <a onclick="showSection('dashboard')">Dashboard</a>
         <a onclick="showSection('fees')">Quản Lý Học Phí</a>
         <a onclick="showSection('late')">Xử Lý Nộp Muộn</a>
         <a onclick="showSection('reports')">Báo Cáo & Thống Kê</a>
         <a onclick="showSection('system')">Hệ Thống</a>
+        <a onclick="showSection('exit')">Thoát</a>
     </div>
 
     <!-- Main Content -->
@@ -63,29 +68,30 @@
         <!-- Dashboard Section -->
         <section id="dashboard" class="section active">
             <h1>Dashboard</h1>
+            <p>Chào mừng bạn đến với hệ thống quản lý học phí.</p>
             <div class="row">
-                <div class="col-md-3">
-                    <div class="dashboard-card">
-                        <h3>Tổng Số Sinh Viên</h3>
-                        <p>200</p>
+                <div class="col-md-4">
+                    <div class="card bg-info text-white mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Tổng Sinh Viên</h5>
+                            <p class="card-text">200</p>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="dashboard-card">
-                        <h3>Tổng Số Lớp</h3>
-                        <p>50</p>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Đã Nộp Học Phí</h5>
+                            <p class="card-text">150</p>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="dashboard-card">
-                        <h3>Đã Nộp Học Phí</h3>
-                        <p>150</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="dashboard-card">
-                        <h3>Nợ Học Phí</h3>
-                        <p>50</p>
+                <div class="col-md-4">
+                    <div class="card bg-danger text-white mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Nợ Học Phí</h5>
+                            <p class="card-text">50</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -94,70 +100,90 @@
         <!-- Fees Section -->
         <section id="fees" class="section">
             <h1>Quản Lý Học Phí</h1>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Mã Sinh Viên</th>
-                        <th>Họ Tên</th>
-                        <th>Số Tiền Nộp</th>
-                        <th>Trạng Thái</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>SV001</td>
-                        <td>Nguyễn Văn A</td>
-                        <td>5,000,000 VND</td>
-                        <td>Đã Nộp</td>
-                    </tr>
-                    <tr>
-                        <td>SV002</td>
-                        <td>Trần Thị B</td>
-                        <td>3,000,000 VND</td>
-                        <td>Chưa Nộp</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div>
+                <h5>Thông báo kế hoạch thu học phí</h5>
+                <p>Học phí kỳ mới cần được nộp trước ngày 30/06/2024. Vui lòng thực hiện đúng hạn để tránh bị xử lý vi
+                    phạm.</p>
+                <h5>Lập hóa đơn học phí</h5>
+                <p>Hóa đơn sẽ được tự động gửi qua email cho từng sinh viên sau khi đăng ký môn học.</p>
+                <h5>Cập nhật tình trạng nộp học phí</h5>
+                <p>Trạng thái nộp học phí được cập nhật hàng ngày dựa trên giao dịch từ ngân hàng.</p>
+                <h5>Danh sách sinh viên đã/chưa nộp học phí</h5>
+                <div class="table-container">
+                    <table class="table table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Mã Sinh Viên</th>
+                                <th>Họ Tên</th>
+                                <th>Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>SV001</td>
+                                <td>Nguyễn Văn A</td>
+                                <td>Đã Nộp</td>
+                            </tr>
+                            <tr>
+                                <td>SV002</td>
+                                <td>Trần Thị B</td>
+                                <td>Chưa Nộp</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h5>Xóa tên sinh viên nợ học phí khỏi lớp học</h5>
+                <p>Danh sách sinh viên bị xóa sẽ được gửi về giáo viên phụ trách để xử lý.</p>
+            </div>
         </section>
 
         <!-- Late Section -->
         <section id="late" class="section">
-            <h1>Xử Lý Nộp Muộn</h1>
-            <p>Các sinh viên sau đây đã nộp muộn:</p>
+            <h1>Xử Lý Nộp Học Phí Muộn</h1>
+            <h5>Nhận đơn xin nộp chậm học phí</h5>
+            <p>Sinh viên có thể nộp đơn xin gia hạn qua hệ thống trực tuyến.</p>
+            <h5>Cập nhật trạng thái xử lý đơn</h5>
+            <p>Trạng thái đơn sẽ được phản hồi trong vòng 3 ngày làm việc.</p>
+            <h5>Danh sách sinh viên được duyệt nộp muộn</h5>
             <ul>
-                <li>Nguyễn Văn C - Lớp K16 - 5 ngày trễ</li>
-                <li>Phạm Thị D - Lớp K17 - 3 ngày trễ</li>
+                <li>Nguyễn Văn C - K16 - Gia hạn đến 15/07/2024</li>
+                <li>Phạm Thị D - K17 - Gia hạn đến 10/07/2024</li>
             </ul>
         </section>
 
         <!-- Reports Section -->
         <section id="reports" class="section">
             <h1>Báo Cáo & Thống Kê</h1>
-            <p>Biểu đồ thống kê về nộp học phí:</p>
-            <div>
-                <img src="https://via.placeholder.com/600x400" alt="Biểu đồ thống kê" class="img-fluid">
-            </div>
+            <h5>Báo cáo tình hình nộp học phí</h5>
+            <p>95% sinh viên đã hoàn thành việc nộp học phí trong kỳ trước.</p>
+            <h5>Thống kê sinh viên theo trạng thái học phí</h5>
+            <p>Đã nộp: 150, Chưa nộp: 50</p>
+            <h5>Thống kê lớp tín chỉ theo số lượng sinh viên</h5>
+            <p>Lớp tín chỉ K16: 30 sinh viên, K17: 40 sinh viên.</p>
         </section>
 
         <!-- System Section -->
         <section id="system" class="section">
             <h1>Hệ Thống</h1>
-            <p>Quản lý hệ thống, cấu hình và kiểm tra lỗi.</p>
             <ul>
-                <li>Cập nhật phần mềm</li>
-                <li>Kiểm tra trạng thái hệ thống</li>
-                <li>Quản lý quyền truy cập</li>
+                <li>Quản lý người dùng: Thêm, sửa, xóa tài khoản.</li>
+                <li>Cấu hình thông số hệ thống: Cập nhật học phí, ngày hạn.</li>
+                <li>Sao lưu và phục hồi dữ liệu: Tự động sao lưu hàng tuần.</li>
             </ul>
+        </section>
+
+        <!-- Exit Section -->
+        <section id="exit" class="section">
+            <h1>Thoát</h1>
+            <p>Cảm ơn bạn đã sử dụng hệ thống quản lý học phí. Hẹn gặp lại!</p>
         </section>
     </div>
 
     <script>
         function showSection(sectionId) {
-            // Ẩn tất cả các section
             document.querySelectorAll('.section').forEach(function (section) {
                 section.classList.remove('active');
             });
-            // Hiển thị section được chọn
             document.getElementById(sectionId).classList.add('active');
         }
     </script>
