@@ -1,4 +1,3 @@
-// server.cpp
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -134,9 +133,11 @@ void send_file(int sock, const string &filename) {
 
     file.seekg(0, ios::end);
     size_t file_size = file.tellg();
+    cout << "Calculated file size: " << file_size << " bytes" << endl;
     file.seekg(0, ios::beg);
 
     send(sock, &file_size, sizeof(file_size), 0); // Send size of the file
+    cout << "Sent file size: " << file_size << " bytes to server" << endl;
 
     char buffer[BUFFER_SIZE];
     size_t total_bytes_sent = 0;
@@ -156,6 +157,8 @@ void send_file(int sock, const string &filename) {
 }
 
 void receive_file(int sock, const string &filename) {
+    cout << "Starting to receive file upload request..." << endl;
+    cout << "File name received: " << filename << "\n";
     ofstream file(filename, ios::binary);
     if (!file.is_open()) {
         cerr << "Failed to open file for writing: " << filename << "\n";
@@ -163,7 +166,12 @@ void receive_file(int sock, const string &filename) {
     }
 
     size_t file_size;
-    recv(sock, &file_size, sizeof(file_size), 0); // Receive size of the file
+    if (recv(sock, &file_size, sizeof(file_size), 0) > 0) {
+        cout << "File size received successfully: " << file_size << " bytes" << endl;
+    } else {
+        cerr << "Failed to receive file size.";
+        return;
+    }
 
     char buffer[BUFFER_SIZE];
     ssize_t bytes_received;
