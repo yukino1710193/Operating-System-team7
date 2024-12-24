@@ -1,3 +1,4 @@
+// server.cpp
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -115,18 +116,27 @@ void send_file_list(int sock) {
         file_list += entry.path().filename().string() + "\n";
     }
 
-    ssize_t bytes_sent = send(sock, file_list.c_str(), file_list.size(), 0);
-    send(sock, "EOF", 3, 0);
+    size_t list_size = file_list.size();
+    send(sock, &list_size, sizeof(list_size), 0); // Send size of the list
+    send(sock, file_list.c_str(), list_size, 0);
 
-    cout << "Sent file list to client. Total bytes sent: " << bytes_sent << "\n";
+    cout << "Sent file list to client. Total bytes sent: " << list_size << "\n";
 }
 
 void send_file(int sock, const string &filename) {
     ifstream file(filename, ios::binary);
     if (!file.is_open()) {
         cerr << "File not found: " << filename << "\n";
+        size_t error_size = 0;
+        send(sock, &error_size, sizeof(error_size), 0);
         return;
     }
+
+    file.seekg(0, ios::end);
+    size_t file_size = file.tellg();
+    file.seekg(0, ios::beg);
+
+    send(sock, &file_size, sizeof(file_size), 0); // Send size of the file
 
     char buffer[BUFFER_SIZE];
     size_t total_bytes_sent = 0;
@@ -135,7 +145,11 @@ void send_file(int sock, const string &filename) {
         ssize_t bytes_sent = send(sock, buffer, file.gcount(), 0);
         total_bytes_sent += bytes_sent;
     }
-    send(sock, "EOF", 3, 0);
+
+    if (file.gcount() > 0) {
+        ssize_t bytes_sent = send(sock, buffer, file.gcount(), 0);
+        total_bytes_sent += bytes_sent;
+    }
 
     cout << "File " << filename << " sent successfully. Total bytes sent: " << total_bytes_sent << "\n";
     file.close();
@@ -148,12 +162,17 @@ void receive_file(int sock, const string &filename) {
         return;
     }
 
+    size_t file_size;
+    recv(sock, &file_size, sizeof(file_size), 0); // Receive size of the file
+
     char buffer[BUFFER_SIZE];
     ssize_t bytes_received;
     size_t total_bytes_received = 0;
 
-    while ((bytes_received = recv(sock, buffer, BUFFER_SIZE, 0)) > 0) {
-        if (string(buffer, bytes_received).find("EOF") != string::npos) {
+    while (total_bytes_received < file_size) {
+        bytes_received = recv(sock, buffer, std::min(static_cast<size_t>(BUFFER_SIZE), file_size - total_bytes_received), 0);
+        if (bytes_received <= 0) {
+            cerr << "Error receiving file data.\n";
             break;
         }
         file.write(buffer, bytes_received);

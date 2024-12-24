@@ -1,3 +1,4 @@
+// client.cpp
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -79,13 +80,20 @@ void list_files() {
     char choice = '1';
     send(sock, &choice, sizeof(choice), 0);
 
+    size_t list_size;
+    recv(sock, &list_size, sizeof(list_size), 0); // Receive size of the list
+
     char buffer[BUFFER_SIZE];
-    while (true) {
-        ssize_t bytes_received = recv(sock, buffer, BUFFER_SIZE, 0);
-        if (bytes_received <= 0 || string(buffer, bytes_received) == "EOF") {
-            break;
+    size_t total_bytes_received = 0;
+
+    while (total_bytes_received < list_size) {
+        ssize_t bytes_received = recv(sock, buffer, std::min(static_cast<size_t>(BUFFER_SIZE), list_size - total_bytes_received), 0);
+        if (bytes_received <= 0) {
+            cerr << "Error receiving file list.\n";
+            return;
         }
         cout << string(buffer, bytes_received);
+        total_bytes_received += bytes_received;
     }
     cout << "File list received successfully.\n";
 }
@@ -99,6 +107,9 @@ void download_file() {
     send(sock, &choice, sizeof(choice), 0);
     send(sock, filename.c_str(), filename.size() + 1, 0);
 
+    size_t file_size;
+    recv(sock, &file_size, sizeof(file_size), 0); // Receive size of the file
+
     ofstream file(filename, ios::binary);
     if (!file.is_open()) {
         cerr << "Failed to create file!\n";
@@ -107,9 +118,10 @@ void download_file() {
 
     char buffer[BUFFER_SIZE];
     size_t total_bytes_received = 0;
-    while (true) {
-        ssize_t bytes_received = recv(sock, buffer, BUFFER_SIZE, 0);
-        if (bytes_received <= 0 || string(buffer, bytes_received) == "EOF") {
+    while (total_bytes_received < file_size) {
+        ssize_t bytes_received = recv(sock, buffer, std::min(static_cast<size_t>(BUFFER_SIZE), file_size - total_bytes_received), 0);
+        if (bytes_received <= 0) {
+            cerr << "Error receiving file data.\n";
             break;
         }
         file.write(buffer, bytes_received);
@@ -134,13 +146,23 @@ void upload_file() {
     send(sock, &choice, sizeof(choice), 0);
     send(sock, filename.c_str(), filename.size() + 1, 0);
 
+    file.seekg(0, ios::end);
+    size_t file_size = file.tellg();
+    file.seekg(0, ios::beg);
+    send(sock, &file_size, sizeof(file_size), 0); // Send size of the file
+
     char buffer[BUFFER_SIZE];
     size_t total_bytes_sent = 0;
     while (file.read(buffer, sizeof(buffer))) {
         ssize_t bytes_sent = send(sock, buffer, file.gcount(), 0);
         total_bytes_sent += bytes_sent;
     }
-    send(sock, "EOF", 3, 0);
+
+    if (file.gcount() > 0) {
+        ssize_t bytes_sent = send(sock, buffer, file.gcount(), 0);
+        total_bytes_sent += bytes_sent;
+    }
+
     file.close();
     cout << "File uploaded successfully. Total bytes sent: " << total_bytes_sent << "\n";
 }
