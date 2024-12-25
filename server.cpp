@@ -1,3 +1,4 @@
+// server.cpp - SSL/TLS enabled server
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -7,7 +8,8 @@
 #include <thread>
 #include <filesystem>
 #include <csignal>
-#include <termios.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
@@ -17,22 +19,65 @@ namespace fs = std::filesystem;
 
 string dir = "./cloud/"; // Directory for shared files
 int sockfd;
+SSL_CTX *ssl_ctx;
 
-void handle_client(int new_sock);
-void send_file_list(int sock);
-void send_file(int sock, const string &filename);
-void receive_file(int sock, const string &filename);
-void reset_terminal_mode();
+void init_openssl() {
+    SSL_load_error_strings();
+    OpenSSL_add_ssl_algorithms();
+}
+
+void cleanup_openssl() {
+    EVP_cleanup();
+}
+
+SSL_CTX *create_context() {
+    const SSL_METHOD *method;
+    SSL_CTX *ctx;
+
+    method = SSLv23_server_method();
+    ctx = SSL_CTX_new(method);
+    if (!ctx) {
+        cerr << "Unable to create SSL context" << endl;
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    return ctx;
+}
+
+void configure_context(SSL_CTX *ctx) {
+    // Set the key and cert
+    if (SSL_CTX_use_certificate_file(ctx, "server.crt", SSL_FILETYPE_PEM) <= 0) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    if (SSL_CTX_use_PrivateKey_file(ctx, "server.key", SSL_FILETYPE_PEM) <= 0) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+}
+
+void handle_client(SSL *ssl);
+void send_file_list(SSL *ssl);
+void send_file(SSL *ssl, const string &filename);
+void receive_file(SSL *ssl, const string &filename);
 
 void handle_signal(int signum) {
     cout << "\nShutting down server...\n";
     close(sockfd);
+    SSL_CTX_free(ssl_ctx);
+    cleanup_openssl();
     exit(0);
 }
 
 int main() {
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
+
+    init_openssl();
+    ssl_ctx = create_context();
+    configure_context(ssl_ctx);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
@@ -66,99 +111,107 @@ int main() {
             continue;
         }
 
+        SSL *ssl = SSL_new(ssl_ctx);
+        SSL_set_fd(ssl, new_sock);
+
+        if (SSL_accept(ssl) <= 0) {
+            ERR_print_errors_fp(stderr);
+            close(new_sock);
+            continue;
+        }
+
         cout << "New connection accepted from client.\n";
 
-        thread client_thread(handle_client, new_sock);
+        thread client_thread([ssl]() {
+            handle_client(ssl);
+            SSL_free(ssl);
+        });
         client_thread.detach();
     }
 
     close(sockfd);
+    SSL_CTX_free(ssl_ctx);
+    cleanup_openssl();
     return 0;
 }
 
-void handle_client(int new_sock) {
+void handle_client(SSL *ssl) {
     char choice;
-    while (recv(new_sock, &choice, sizeof(choice), 0) > 0) {
+    while (SSL_read(ssl, &choice, sizeof(choice)) > 0) {
         switch (choice) {
         case '1':
             cout << "Client requested file list.\n";
-            send_file_list(new_sock);
+            send_file_list(ssl);
             break;
         case '2': {
             char filename[BUFFER_SIZE];
-            recv(new_sock, filename, BUFFER_SIZE, 0);
+            SSL_read(ssl, filename, BUFFER_SIZE);
             cout << "Client requested to download file: " << filename << "\n";
-            send_file(new_sock, dir + filename);
+            send_file(ssl, dir + filename);
             break;
         }
         case '3': {
             char filename[BUFFER_SIZE];
-            recv(new_sock, filename, BUFFER_SIZE, 0);
+            SSL_read(ssl, filename, BUFFER_SIZE);
             cout << "Client is uploading file: " << filename << "\n";
-            receive_file(new_sock, dir + filename);
+            receive_file(ssl, dir + filename);
             break;
         }
         case '4':
             cout << "Client disconnected.\n";
-            close(new_sock);
+            SSL_shutdown(ssl);
             return;
         default:
             cerr << "Invalid choice from client!\n";
         }
     }
-    close(new_sock);
+    SSL_shutdown(ssl);
 }
 
-void send_file_list(int sock) {
+void send_file_list(SSL *ssl) {
     string file_list;
     for (const auto &entry : fs::directory_iterator(dir)) {
         file_list += entry.path().filename().string() + "\n";
     }
 
     size_t list_size = file_list.size();
-    send(sock, &list_size, sizeof(list_size), 0); // Send size of the list
-    send(sock, file_list.c_str(), list_size, 0);
+    SSL_write(ssl, &list_size, sizeof(list_size));
+    SSL_write(ssl, file_list.c_str(), list_size);
 
     cout << "Sent file list to client. Total bytes sent: " << list_size << "\n";
 }
 
-void send_file(int sock, const string &filename) {
+void send_file(SSL *ssl, const string &filename) {
     ifstream file(filename, ios::binary);
     if (!file.is_open()) {
         cerr << "File not found: " << filename << "\n";
         size_t error_size = 0;
-        send(sock, &error_size, sizeof(error_size), 0);
+        SSL_write(ssl, &error_size, sizeof(error_size));
         return;
     }
 
     file.seekg(0, ios::end);
     size_t file_size = file.tellg();
-    cout << "Calculated file size: " << file_size << " bytes" << endl;
     file.seekg(0, ios::beg);
 
-    send(sock, &file_size, sizeof(file_size), 0); // Send size of the file
-    cout << "Sent file size: " << file_size << " bytes to server" << endl;
+    SSL_write(ssl, &file_size, sizeof(file_size));
 
     char buffer[BUFFER_SIZE];
     size_t total_bytes_sent = 0;
 
     while (file.read(buffer, sizeof(buffer))) {
-        ssize_t bytes_sent = send(sock, buffer, file.gcount(), 0);
-        total_bytes_sent += bytes_sent;
+        total_bytes_sent += SSL_write(ssl, buffer, file.gcount());
     }
 
     if (file.gcount() > 0) {
-        ssize_t bytes_sent = send(sock, buffer, file.gcount(), 0);
-        total_bytes_sent += bytes_sent;
+        total_bytes_sent += SSL_write(ssl, buffer, file.gcount());
     }
 
     cout << "File " << filename << " sent successfully. Total bytes sent: " << total_bytes_sent << "\n";
     file.close();
 }
 
-void receive_file(int sock, const string &filename) {
-    cout << "Starting to receive file upload request..." << endl;
-    cout << "File name received: " << filename << "\n";
+void receive_file(SSL *ssl, const string &filename) {
     ofstream file(filename, ios::binary);
     if (!file.is_open()) {
         cerr << "Failed to open file for writing: " << filename << "\n";
@@ -166,19 +219,13 @@ void receive_file(int sock, const string &filename) {
     }
 
     size_t file_size;
-    if (recv(sock, &file_size, sizeof(file_size), 0) > 0) {
-        cout << "File size received successfully: " << file_size << " bytes" << endl;
-    } else {
-        cerr << "Failed to receive file size.";
-        return;
-    }
+    SSL_read(ssl, &file_size, sizeof(file_size));
 
     char buffer[BUFFER_SIZE];
-    ssize_t bytes_received;
     size_t total_bytes_received = 0;
 
     while (total_bytes_received < file_size) {
-        bytes_received = recv(sock, buffer, std::min(static_cast<size_t>(BUFFER_SIZE), file_size - total_bytes_received), 0);
+        ssize_t bytes_received = SSL_read(ssl, buffer, std::min(static_cast<size_t>(BUFFER_SIZE), file_size - total_bytes_received));
         if (bytes_received <= 0) {
             cerr << "Error receiving file data.\n";
             break;
