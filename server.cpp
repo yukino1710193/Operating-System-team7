@@ -89,7 +89,7 @@ void configure_context(SSL_CTX *ctx)
     }
 }
 
-void handle_client(SSL *ssl);
+void handle_client(SSL *ssl, struct sockaddr_in client_addr);
 void send_file_list(SSL *ssl);
 void send_file(SSL *ssl, const string &filename);
 void receive_file(SSL *ssl, const string &filename);
@@ -159,11 +159,13 @@ int main()
             continue;
         }
 
-        cout << "New connection accepted from client.\n";
+        // cout << "New connection accepted from client.\n";
+        cout << "New connection from IP: " << inet_ntoa(client_addr.sin_addr)
+             << ", Port: " << ntohs(client_addr.sin_port) << "\n";
 
-        thread client_thread([ssl]()
+        thread client_thread([ssl, client_addr]()
                              {
-            handle_client(ssl);
+            handle_client(ssl, client_addr);
             SSL_free(ssl); });
         client_thread.detach();
     }
@@ -174,7 +176,7 @@ int main()
     return 0;
 }
 
-void handle_client(SSL *ssl)
+void handle_client(SSL *ssl, struct sockaddr_in client_addr)
 {
     char choice;
     while (SSL_read(ssl, &choice, sizeof(choice)) > 0)
@@ -182,14 +184,16 @@ void handle_client(SSL *ssl)
         switch (choice)
         {
         case '1':
-            cout << "Client requested file list.\n";
+            cout << "Client from IP: " << inet_ntoa(client_addr.sin_addr)
+                 << " requested file list.\n";
             send_file_list(ssl);
             break;
         case '2':
         {
             char filename[BUFFER_SIZE];
             SSL_read(ssl, filename, BUFFER_SIZE);
-            cout << "Client requested to download file: " << filename << "\n";
+            cout << "Client from IP: " << inet_ntoa(client_addr.sin_addr)
+                 << " requested to download file: " << filename << "\n";
             send_file(ssl, dir + filename);
             break;
         }
@@ -197,12 +201,14 @@ void handle_client(SSL *ssl)
         {
             char filename[BUFFER_SIZE];
             SSL_read(ssl, filename, BUFFER_SIZE);
-            cout << "Client is uploading file: " << filename << "\n";
+            cout << "Client from IP: " << inet_ntoa(client_addr.sin_addr)
+                 << " is uploading file: " << filename << "\n";
             receive_file(ssl, dir + filename);
             break;
         }
         case '4':
-            cout << "Client disconnected.\n";
+            cout << "Client disconnected from IP: " << inet_ntoa(client_addr.sin_addr)
+                 << ", Port: " << ntohs(client_addr.sin_port) << "\n";
             SSL_shutdown(ssl);
             return;
         default:
@@ -210,6 +216,8 @@ void handle_client(SSL *ssl)
         }
     }
     SSL_shutdown(ssl);
+    cout << "Client disconnected from IP: " << inet_ntoa(client_addr.sin_addr)
+         << ", Port: " << ntohs(client_addr.sin_port) << "\n";
 }
 
 void send_file_list(SSL *ssl)
